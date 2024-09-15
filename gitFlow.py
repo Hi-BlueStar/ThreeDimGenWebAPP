@@ -211,6 +211,55 @@ class AnimatedButton(QPushButton):
     _scale_factor = 1.0
     scale_factor = Property(float, get_scale_factor, set_scale_factor)
 
+class GitManager:
+    """
+    Git 管理類別，用來執行各種 Git 操作。
+
+    方法:
+    - run_git_command: 執行 Git 指令並返回結果。
+    - init_repository: 初始化一個新的 Git 倉庫。
+    """
+    def run_git_command(self, command):
+        """
+        執行指定的 Git 命令，根據當前選擇的操作系統，選擇適合的 Shell。
+
+        參數:
+        command (str): 要執行的 Git 命令。
+
+        返回:
+        return (str or None): 如果命令成功執行，返回命令的輸出結果。否則，返回 None 並顯示錯誤訊息。
+        """
+        try:
+            if self.os_type == "Windows":
+                # 在 Windows 上執行命令，使用 shell=True
+                result = subprocess.run(command, shell=True, capture_output=True, text=True)
+            else:
+                # 在 Linux 或 MacOS 上使用 Bash 執行命令
+                result = subprocess.run(command, shell=True, executable='/bin/bash', capture_output=True, text=True)
+
+            if result.returncode == 0:
+                # 如果命令執行成功，返回標準輸出
+                return result.stdout.strip()
+            else:
+                # 如果命令失敗，拋出錯誤並顯示標準錯誤輸出
+                raise Exception(result.stderr.strip())
+        except Exception as e:
+            # 顯示錯誤訊息
+            QMessageBox.critical(self, "錯誤", f"Git 命令失敗：\n{e}")
+            return None
+
+    def init_repository(self):
+        """
+        初始化一個新的 Git 倉庫。
+
+        返回:
+        return (None): 無返回值，成功時顯示倉庫初始化訊息，失敗時顯示錯誤訊息。
+        """
+        output = self.run_git_command("git init")
+        if output:
+            # 如果初始化成功，顯示成功訊息
+            QMessageBox.information(self, "初始化倉庫", f"成功初始化倉庫：\n{output}")
+
 class GitManagerApp(QWidget):
     """
     一個基於 Qt 的 Git 管理工具 GUI 應用程式，提供了基本的 Git 操作，如初始化倉庫、提交變更、推送到遠端、顯示分支等功能。
