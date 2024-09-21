@@ -260,6 +260,217 @@ class GitManager:
             # 如果初始化成功，顯示成功訊息
             QMessageBox.information(self, "初始化倉庫", f"成功初始化倉庫：\n{output}")
 
+    def add_file(self):
+        """
+        將檔案添加到 Git 的暫存區，使用者可以指定要添加的檔案或目錄。
+
+        返回:
+        return (None): 無返回值，成功時顯示添加成功訊息，失敗時顯示錯誤訊息。
+        """
+        # 顯示輸入對話框，讓使用者輸入要添加的檔案或目錄
+        file_name, ok = QInputDialog.getText(self, "添加檔案", "請輸入要添加的檔案或目錄:")
+        if ok and file_name:
+            # 執行 Git 添加檔案的命令
+            output = self.run_git_command(f"git add {file_name}")
+            if output:
+                # 如果添加成功，顯示成功訊息
+                QMessageBox.information(self, "添加檔案", f"成功添加檔案：\n{file_name}")
+            else:
+                # 如果添加失敗，顯示錯誤訊息
+                QMessageBox.critical(self, "添加失敗", f"添加檔案失敗：\n{output}")
+
+    def commit_changes(self):
+        """
+        提交當前工作目錄的變更，使用用戶指定的提交訊息。
+
+        返回:
+        return (None): 無返回值，成功時顯示提交訊息，失敗時顯示錯誤訊息。
+        """
+        output = self.run_git_command(f"git add . && git commit -m '{str(self.commit_entry.text())}'")
+        if output:
+            # 如果提交成功，顯示成功訊息
+            QMessageBox.information(self, "提交變更", f"提交成功：\n{output}")
+
+    def push_changes(self):
+        """
+        將當前分支的變更推送到遠端倉庫。
+
+        返回:
+        return (None): 無返回值，成功時顯示推送成功訊息，失敗時顯示錯誤訊息。
+        """
+        repo = self.repo_entry.text() if self.repo_entry.text() else "origin"
+        output = self.run_git_command(f"git push {repo} master")
+        if output:
+            # 如果推送成功，顯示成功訊息
+            QMessageBox.information(self, "推送至遠端", f"推送成功：\n{output}")
+
+    def show_branches(self):
+        """
+        顯示所有本地分支。
+
+        返回:
+        return (None): 無返回值，成功時顯示分支列表，失敗時顯示錯誤訊息。
+        """
+        output = self.run_git_command("git branch")
+        if output:
+            # 顯示目前的所有分支
+            QMessageBox.information(self, "顯示分支", f"目前分支：\n{output}")
+
+    def create_branch(self):
+        """
+        創建一個新的 Git 分支，並自動切換到該分支。
+
+        返回:
+        return (None): 無返回值，成功時顯示新分支的訊息，失敗時顯示錯誤訊息。
+        """
+        # 顯示輸入對話框，讓使用者輸入新分支名稱
+        branch_name, ok = QInputDialog.getText(self, "新分支名稱", "請輸入新分支名稱:")
+        if ok and branch_name:
+            # 執行 Git 創建新分支的命令
+            output = self.run_git_command(f"git checkout -b {branch_name}")
+            if output:
+                # 如果成功，顯示訊息告知用戶已成功創建並切換到新分支
+                QMessageBox.information(self, "創建新分支", f"成功創建並切換到新分支：\n{output}")
+
+    def switch_branch(self):
+        """
+        切換到其他指定的 Git 分支。
+
+        返回:
+        return (None): 無返回值，成功時顯示切換成功訊息，失敗時顯示錯誤訊息。
+        """
+        # 顯示輸入對話框，讓使用者輸入要切換的分支名稱
+        branch_name, ok = QInputDialog.getText(self, "切換分支", "請輸入要切換的分支名稱:")
+        if ok and branch_name:
+            # 執行 Git 切換分支的命令
+            output = self.run_git_command(f"git checkout {branch_name}")
+            if output:
+                # 如果成功，顯示切換成功的訊息
+                QMessageBox.information(self, "切換分支", f"成功切換到分支：\n{output}")
+
+    def merge_branch(self):
+        """
+        合併指定的分支到當前所在分支。
+
+        返回:
+        return (None): 無返回值，成功時顯示合併成功訊息，遇到衝突則進行處理。
+        """
+        # 顯示輸入對話框，讓使用者輸入要合併的分支名稱
+        branch_name, ok = QInputDialog.getText(self, "合併分支", "請輸入要合併的分支名稱:")
+        if ok and branch_name:
+            # 執行 Git 合併分支的命令
+            output = self.run_git_command(f"git merge {branch_name}")
+            if output:
+                # 如果合併成功，顯示成功訊息
+                QMessageBox.information(self, "合併分支", f"成功合併分支：\n{output}")
+            else:
+                # 如果合併發生衝突，調用處理衝突的方法
+                self.handle_merge_conflict()
+
+    def rename_branch(self):
+        """
+        重命名當前 Git 分支。
+
+        返回:
+        return (None): 無返回值，成功時顯示分支重命名成功訊息。
+        """
+        # 顯示輸入對話框，讓使用者輸入新的分支名稱
+        new_branch_name, ok = QInputDialog.getText(self, "重命名分支", "請輸入新的分支名稱:")
+        if ok and new_branch_name:
+            # 執行 Git 分支重命名命令
+            output = self.run_git_command(f"git branch -m {new_branch_name}")
+            if output is not None:
+                # 如果成功，顯示成功重命名訊息
+                QMessageBox.information(self, "重命名分支", f"成功重命名當前分支為：{new_branch_name}")
+
+    def delete_branch(self):
+        """
+        刪除指定的 Git 分支。
+
+        返回:
+        return (None): 無返回值，成功時顯示刪除成功訊息。
+        """
+        # 顯示輸入對話框，讓使用者輸入要刪除的分支名稱
+        branch_name, ok = QInputDialog.getText(self, "刪除分支", "請輸入要刪除的分支名稱:")
+        if ok and branch_name:
+            # 顯示確認對話框，確保用戶確認要刪除分支
+            confirm = QMessageBox.question(self, "刪除確認", f"確定要刪除分支 {branch_name} 嗎？")
+            if confirm == QMessageBox.Yes:
+                # 執行 Git 刪除分支的命令
+                output = self.run_git_command(f"git branch -d {branch_name}")
+                if output:
+                    # 如果成功，顯示刪除成功的訊息
+                    QMessageBox.information(self, "刪除分支", f"成功刪除分支：\n{output}")
+
+    def handle_merge_conflict(self):
+        """
+        處理 Git 分支合併衝突，提示用戶手動解決衝突並提交解決。
+
+        返回:
+        return (None): 無返回值，當衝突解決後會提交衝突解決訊息。
+        """
+        # 顯示確認對話框，詢問用戶是否已經解決合併衝突
+        resolve = QMessageBox.question(self, "合併衝突", "發生衝突，是否已解決並提交？")
+        if resolve == QMessageBox.Yes:
+            # 如果用戶已解決，執行提交命令
+            self.run_git_command("git add . && git commit -m '解決合併衝突'")
+            QMessageBox.information(self, "合併衝突", "已解決並提交衝突。")
+
+    def show_branch_graph(self):
+        """
+        顯示 Git 分支的圖表，通過 NetworkX 生成分支結構圖並在視窗中顯示。
+
+        返回:
+        return (None): 無返回值，成功時顯示分支圖表，失敗時顯示錯誤訊息。
+        """
+        # 根據操作系統設置相應的 Git 日誌命令來取得分支圖表的數據
+        if self.os_type == "Windows":
+            git_command = 'git log --all --pretty=format:"%h %p"'
+        else:
+            git_command = "git log --all --pretty=format:'%h %p'"
+
+        # 執行 Git 命令來獲取日誌數據
+        output = self.run_git_command(git_command)
+        if output:
+            edges = []
+            # 解析 Git 日誌的輸出，提取提交之間的關聯（邊）
+            for line in output.split('\n'):
+                parts = line.strip().split()
+                if len(parts) > 1:
+                    parent_hashes = parts[1:]
+                    for parent in parent_hashes:
+                        edges.append((parent, parts[0]))
+
+            # 創建有向圖來顯示分支結構
+            G = nx.DiGraph()
+            G.add_edges_from(edges)
+
+            # 使用 spring 布局來安排節點的位置
+            pos = nx.spring_layout(G)
+            plt.figure(figsize=(12, 8))
+            # 繪製圖表，節點顯示提交哈希
+            nx.draw(G, pos, with_labels=True, node_size=800, node_color='#A4DDA4', arrowsize=20)
+            plt.title("Git 分支圖表", fontsize=16)
+
+            # 創建一個新的視窗來顯示圖表
+            graph_window = QDialog(self)
+            graph_window.setWindowTitle("分支圖表")
+            graph_layout = QVBoxLayout(graph_window)
+
+            # 將 matplotlib 圖表嵌入到 Qt 視窗中
+            from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+            canvas = FigureCanvas(plt.gcf())
+            graph_layout.addWidget(canvas)
+            graph_window.exec()
+
+            # 清理圖表，避免重複繪製
+            plt.clf()
+        else:
+            # 如果無法獲取分支圖表數據，顯示錯誤訊息
+            QMessageBox.information(self, "分支圖表", "無法取得分支圖表資料。")
+    
+    
+
 class GitManagerApp(QWidget):
     """
     一個基於 Qt 的 Git 管理工具 GUI 應用程式，提供了基本的 Git 操作，如初始化倉庫、提交變更、推送到遠端、顯示分支等功能。
@@ -370,7 +581,7 @@ class GitManagerApp(QWidget):
         layout.addWidget(self.init_btn, 6, 0)
 
         # 提交變更按鈕
-        self.commit_btn = AnimatedButton("提交變更", self)
+        self.commit_btn = AnimatedButton("提交變更\n(預設提交全部)", self)
         self.commit_btn.setStyleSheet(button_style)
         # 點擊按鈕時調用 commit_changes 方法
         self.commit_btn.clicked.connect(self.commit_changes)
@@ -504,7 +715,7 @@ class GitManagerApp(QWidget):
 
     def push_changes(self):
         """
-        將當前分支的變更推送到遠端倉庫。
+        將當前分支的變更推送到遠端倉庫。2
 
         返回:
         return (None): 無返回值，成功時顯示推送成功訊息，失敗時顯示錯誤訊息。
